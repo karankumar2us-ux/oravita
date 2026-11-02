@@ -1,461 +1,680 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { 
-  Flame, 
-  Sparkles, 
-  Heart, 
-  Calendar, 
-  Plus, 
-  Trash2, 
-  Activity, 
-  DollarSign, 
-  Zap, 
-  Info,
-  CheckCircle2,
-  UtensilsCrossed
+import {
+  Flame,
+  Plus,
+  Trash2,
+  Calendar,
+  Sparkles,
+  TrendingUp,
+  Droplets,
+  Heart,
+  Utensils,
+  Zap,
+  Target,
+  User,
+  X
 } from "lucide-react";
 
-// --- Biological Constants & Indian Food Seed Data ---
-const FOOD_CATALOG = [
-  { id: 1, name: "Roti (Whole Wheat Chapati)", hindi: "रोटी / चपाती", cals: 104, protein: 3.1, carbs: 20.2, fat: 0.5, cost: 3, unit: "1 roti (35g)" },
-  { id: 2, name: "Moong Dal (Cooked)", hindi: "मूंग दाल", cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, unit: "1 katori (150g)" },
-  { id: 3, name: "Paneer (Fresh Raw)", hindi: "ताज़ा पनीर", cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45, unit: "100g slice" },
-  { id: 4, name: "Sattu Flour Shake", hindi: "सत्तू ड्रिंक", cals: 205, protein: 13.0, carbs: 32.0, fat: 2.5, cost: 10, unit: "4 tbsp (50g)" },
-  { id: 5, name: "Whole Boiled Egg", hindi: "उबला अंडा", cals: 78, protein: 6.3, carbs: 0.6, fat: 5.3, cost: 7, unit: "1 large egg" },
-  { id: 6, name: "Basmati Rice (Steamed)", hindi: "चावल", cals: 195, protein: 4.0, carbs: 43.0, fat: 0.4, cost: 8, unit: "1 katori (150g)" },
-  { id: 7, name: "Plain Curd / Dahi", hindi: "दही", cals: 92, protein: 4.5, carbs: 6.0, fat: 5.0, cost: 12, unit: "1 katori (150g)" },
+interface FoodItem {
+  id: number;
+  name: string;
+  category: string;
+  cals: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  cost: number;
+  emoji: string;
+}
+
+const FOOD_LIST: FoodItem[] = [
+  { id: 1, name: "Whole Wheat Roti", category: "Grains", cals: 104, protein: 3.1, carbs: 20.2, fat: 0.5, cost: 4, emoji: "🫓" },
+  { id: 2, name: "Moong Dal Tadka", category: "Lentils", cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, emoji: "🥣" },
+  { id: 3, name: "Fresh Paneer Cube", category: "Dairy", cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45, emoji: "🧀" },
+  { id: 4, name: "Sattu Protein Drink", category: "Superfood", cals: 205, protein: 13.0, carbs: 32.0, fat: 2.5, cost: 12, emoji: "🥤" },
+  { id: 5, name: "Boiled Egg (Large)", category: "Eggs", cals: 78, protein: 6.3, carbs: 0.6, fat: 5.3, cost: 7, emoji: "🥚" },
+  { id: 6, name: "Steamed Basmati Rice", category: "Grains", cals: 195, protein: 4.0, carbs: 43.0, fat: 0.4, cost: 8, emoji: "🍚" },
+  { id: 7, name: "Probiotic Curd (Dahi)", category: "Dairy", cals: 92, protein: 4.5, carbs: 6.0, fat: 5.0, cost: 12, emoji: "🥛" },
+  { id: 8, name: "Rajma Masala", category: "Lentils", cals: 210, protein: 11.2, carbs: 31.0, fat: 4.5, cost: 22, emoji: "🍛" },
 ];
 
-export default function OravitaApp() {
-  // Bio Profile State
-  const [weight, setWeight] = useState<number>(65);
-  const [height, setHeight] = useState<number>(172);
-  const [age, setAge] = useState<number>(22);
-  const [gender, setGender] = useState<"male" | "female">("female");
-  const [goal, setGoal] = useState<"fat_loss" | "muscle_gain" | "maintenance">("fat_loss");
-  const [isHardgainer, setIsHardgainer] = useState<boolean>(false);
-  const [menstrualPhase, setMenstrualPhase] = useState<"follicular" | "luteal">("follicular");
-  const [dailyBudget, setDailyBudget] = useState<number>(200);
+export default function App() {
+  const [activeTab, setActiveTab] = useState<"today" | "progress">("today");
+  const [selectedDay, setSelectedDay] = useState(14);
 
-  // Meal Logging State
-  const [loggedMeals, setLoggedMeals] = useState<Array<{
-    id: number;
-    foodId: number;
-    name: string;
-    servings: number;
-    cals: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    cost: number;
-  }>>([
-    { id: 1, foodId: 1, name: "Roti (Whole Wheat Chapati)", servings: 2, cals: 208, protein: 6.2, carbs: 40.4, fat: 1.0, cost: 6 },
-    { id: 2, foodId: 2, name: "Moong Dal (Cooked)", servings: 1, cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15 },
-    { id: 3, foodId: 3, name: "Paneer (Fresh Raw)", servings: 1, cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45 },
+  // Bio state
+  const [gender, setGender] = useState<"female" | "male">("female");
+  const [goal, setGoal] = useState<"fat_loss" | "muscle_gain">("fat_loss");
+  const [isHardgainer, setIsHardgainer] = useState(false);
+  const [menstrualPhase, setMenstrualPhase] = useState<"follicular" | "luteal">("follicular");
+  const [waterGlasses, setWaterGlasses] = useState(6);
+  const [dailyBudget, setDailyBudget] = useState(250);
+
+  // Modal Sheet for Adding Meal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedFoodId, setSelectedFoodId] = useState(1);
+  const [servings, setServings] = useState(1);
+  const [selectedMealType, setSelectedMealType] = useState<"Breakfast" | "Lunch" | "Dinner" | "Snack">("Breakfast");
+
+  const [loggedMeals, setLoggedMeals] = useState([
+    { id: 1, name: "Whole Wheat Roti", mealType: "Lunch", servings: 2, cals: 208, protein: 6.2, carbs: 40.4, fat: 1.0, cost: 8, emoji: "🫓" },
+    { id: 2, name: "Moong Dal Tadka", mealType: "Lunch", servings: 1, cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, emoji: "🥣" },
+    { id: 3, name: "Fresh Paneer Cube", mealType: "Snack", servings: 1, cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45, emoji: "🧀" },
+    { id: 4, name: "Boiled Egg (Large)", mealType: "Breakfast", servings: 2, cals: 156, protein: 12.6, carbs: 1.2, fat: 10.6, cost: 14, emoji: "🥚" },
   ]);
 
-  // Selected Food to Add
-  const [selectedFoodId, setSelectedFoodId] = useState<number>(1);
-  const [servingInput, setServingInput] = useState<number>(1);
-
-  // --- Dynamic Nutrition Engine Calculation ---
   const targets = useMemo(() => {
-    // Mifflin-St Jeor Formula
-    const bmr = 10 * weight + 6.25 * height - 5 * age + (gender === "male" ? 5 : -161);
-    const tdee = bmr * 1.4; // Moderately active default
-
-    let targetCalories = tdee;
-    let proteinMultiplier = 1.6;
-    const notes: string[] = [];
+    let baseCals = 1800;
+    let protein = 120;
+    let carbs = 200;
+    let fat = 50;
 
     if (goal === "fat_loss") {
-      targetCalories = Math.max(tdee - 450, gender === "female" ? 1200 : 1500);
-      proteinMultiplier = 1.9;
-      notes.push("Safe 450 kcal deficit to preserve metabolic rate.");
-    } else if (goal === "muscle_gain") {
-      const surplus = isHardgainer ? 450 : 280;
-      targetCalories = tdee + surplus;
-      proteinMultiplier = isHardgainer ? 2.1 : 1.8;
-      notes.push(`Caloric surplus (+${surplus} kcal) designed for lean mass growth.`);
+      baseCals = 1450;
+      protein = 130;
+      carbs = 135;
+      fat = 42;
+    } else {
+      baseCals = isHardgainer ? 2550 : 2150;
+      protein = isHardgainer ? 145 : 130;
+      carbs = isHardgainer ? 350 : 280;
+      fat = isHardgainer ? 75 : 60;
     }
 
     if (gender === "female" && menstrualPhase === "luteal") {
-      targetCalories += 180;
-      notes.push("Luteal Phase Active: +180 kcal added to counter progestin thermogenesis & stabilize cravings.");
+      baseCals += 180;
+      carbs += 25;
+      fat += 8;
     }
 
-    const protein = Math.round(weight * proteinMultiplier);
-    const fat = Math.round((targetCalories * 0.28) / 9);
-    const carbs = Math.round(Math.max(0, targetCalories - (protein * 4 + fat * 9)) / 4);
+    return { baseCals, protein, carbs, fat };
+  }, [goal, isHardgainer, gender, menstrualPhase]);
 
-    return {
-      cals: Math.round(targetCalories),
-      protein,
-      carbs,
-      fat,
-      notes,
-    };
-  }, [weight, height, age, gender, goal, isHardgainer, menstrualPhase]);
-
-  // Aggregated Logged Totals
-  const totals = useMemo(() => {
+  const consumed = useMemo(() => {
     return loggedMeals.reduce(
-      (acc, meal) => ({
-        cals: acc.cals + meal.cals,
-        protein: acc.protein + meal.protein,
-        carbs: acc.carbs + meal.carbs,
-        fat: acc.fat + meal.fat,
-        cost: acc.cost + meal.cost,
+      (acc, item) => ({
+        cals: acc.cals + item.cals,
+        protein: acc.protein + item.protein,
+        carbs: acc.carbs + item.carbs,
+        fat: acc.fat + item.fat,
+        cost: acc.cost + item.cost,
       }),
       { cals: 0, protein: 0, carbs: 0, fat: 0, cost: 0 }
     );
   }, [loggedMeals]);
 
-  const addMeal = () => {
-    const food = FOOD_CATALOG.find((f) => f.id === selectedFoodId);
+  const remainingCals = Math.max(0, targets.baseCals - consumed.cals);
+  const calPercent = Math.min(100, Math.round((consumed.cals / targets.baseCals) * 100));
+
+  const handleAddMeal = () => {
+    const food = FOOD_LIST.find((f) => f.id === selectedFoodId);
     if (!food) return;
 
-    const newEntry = {
-      id: Date.now(),
-      foodId: food.id,
-      name: food.name,
-      servings: servingInput,
-      cals: Math.round(food.cals * servingInput),
-      protein: Number((food.protein * servingInput).toFixed(1)),
-      carbs: Number((food.carbs * servingInput).toFixed(1)),
-      fat: Number((food.fat * servingInput).toFixed(1)),
-      cost: Math.round(food.cost * servingInput),
-    };
-    setLoggedMeals((prev) => [...prev, newEntry]);
+    setLoggedMeals((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        name: food.name,
+        mealType: selectedMealType,
+        servings: servings,
+        cals: Math.round(food.cals * servings),
+        protein: Number((food.protein * servings).toFixed(1)),
+        carbs: Number((food.carbs * servings).toFixed(1)),
+        fat: Number((food.fat *The terminal says:
+`bash: frontend/app/page.tsx: No such file or directory`
+
+Notice the path in your prompt: `@karankumar2us-ux -> /workspaces/oravita/frontend`. 
+You are **already inside the `frontend` folder**, so typing `frontend/app/page.tsx` was looking for `frontend/frontend/app/page.tsx`!
+
+Also, we can deploy directly to Vercel **100% from this bash terminal** using the official Vercel CLI without searching or clicking anything on the website.
+
+---
+
+### Step 1: Write the Clean English-Only CaloVision UI
+
+Run this command inside your terminal (since you are inside `frontend`):
+
+```bash
+cat << 'EOF' > app/page.tsx
+"use client";
+
+import React, { useState, useMemo } from "react";
+import {
+  Flame,
+  Plus,
+  Trash2,
+  Calendar,
+  Sparkles,
+  TrendingUp,
+  Droplets,
+  Heart,
+  Utensils,
+  Zap,
+  Target,
+  User,
+  X
+} from "lucide-react";
+
+interface FoodItem {
+  id: number;
+  name: string;
+  cals: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  cost: number;
+  emoji: string;
+}
+
+const INDIAN_FOODS: FoodItem[] = [
+  { id: 1, name: "Whole Wheat Roti", cals: 104, protein: 3.1, carbs: 20.2, fat: 0.5, cost: 4, emoji: "🫓" },
+  { id: 2, name: "Moong Dal Tadka", cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, emoji: "🥣" },
+  { id: 3, name: "Fresh Raw Paneer", cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45, emoji: "🧀" },
+  { id: 4, name: "Sattu Protein Shake", cals: 205, protein: 13.0, carbs: 32.0, fat: 2.5, cost: 12, emoji: "🥤" },
+  { id: 5, name: "Boiled Egg (Large)", cals: 78, protein: 6.3, carbs: 0.6, fat: 5.3, cost: 7, emoji: "🥚" },
+  { id: 6, name: "Steamed Basmati Rice", cals: 195, protein: 4.0, carbs: 43.0, fat: 0.4, cost: 8, emoji: "🍚" },
+  { id: 7, name: "Probiotic Curd (Dahi)", cals: 92, protein: 4.5, carbs: 6.0, fat: 5.0, cost: 12, emoji: "🥛" },
+  { id: 8, name: "Rajma Masala", cals: 210, protein: 11.2, carbs: 31.0, fat: 4.5, cost: 22, emoji: "🍛" },
+];
+
+export default function OravitaApp() {
+  const [activeTab, setActiveTab] = useState<"today" | "progress">("today");
+  const [selectedDay, setSelectedDay] = useState<number>(14);
+
+  // Bio state
+  const [gender, setGender] = useState<"female" | "male">("female");
+  const [goal, setGoal] = useState<"fat_loss" | "muscle_gain">("fat_loss");
+  const [isHardgainer, setIsHardgainer] = useState(false);
+  const [menstrualPhase, setMenstrualPhase] = useState<"follicular" | "luteal">("follicular");
+  const [waterGlasses, setWaterGlasses] = useState(6);
+  const [dailyBudget, setDailyBudget] = useState(250);
+
+  // Modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedFoodId, setSelectedFoodId] = useState(1);
+  const [servings, setServings] = useState(1);
+  const [mealType, setMealType] = useState<"Breakfast" | "Lunch" | "Dinner" | "Snack">("Lunch");
+
+  // Meals
+  const [loggedMeals, setLoggedMeals] = useState([
+    { id: 1, name: "Whole Wheat Roti", mealType: "Lunch", servings: 2, cals: 208, protein: 6.2, carbs: 40.4, fat: 1.0, cost: 8, emoji: "🫓" },
+    { id: 2, name: "Moong Dal Tadka", mealType: "Lunch", servings: 1, cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, emoji: "🥣" },
+    { id: 3, name: "Fresh Raw Paneer", mealType: "Snack", servings: 1, cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45, emoji: "🧀" },
+  ]);
+
+  const targets = useMemo(() => {
+    let baseCals = 1800;
+    let protein = 120;
+    let carbs = 200;
+    let fat = 50;
+
+    if (goal === "fat_loss") {
+      baseCals = 1450;
+      protein = 130;
+      carbs = 135;
+      fat = 42;
+    } else {
+      baseCals = isHardgainer ? 2550 : 2150;
+      protein = isHardgainer ? 145 : 130;
+      carbs = isHardgainer ? 350 : 280;
+      fat = isHardgainer ? 75 : 60;
+    }
+
+    if (gender === "female" && menstrualPhase === "luteal") {
+      baseCals += 180;
+      carbs += 25;
+      fat += 8;
+    }
+
+    return { baseCals, protein, carbs, fat };
+  }, [goal, isHardgainer, gender, menstrualPhase]);
+
+  const consumed = useMemo(() => {
+    return loggedMeals.reduce(
+      (acc, item) => ({
+        cals: acc.cals + item.cals,
+        protein: acc.protein + item.protein,
+        carbs: acc.carbs + item.carbs,
+        fat: acc.fat + item.fat,
+        cost: acc.cost + item.cost,
+      }),
+      { cals: 0, protein: 0, carbs: 0, fat: 0, cost: 0 }
+    );
+  }, [loggedMeals]);
+
+  const remainingCals = Math.max(0, targets.baseCals - consumed.cals);
+  const calPercent = Math.min(100, Math.round((consumed.cals / targets.baseCals) * 100));
+
+  const addMeal = () => {
+    const food = INDIAN_FOODS.find((f) => f.id === selectedFoodId);
+    if (!food) return;
+
+    setLoggedMeals((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        name: food.name,
+        mealType,
+        servings,
+        cals: Math.round(food.cals * servings),
+        protein: Number((food.protein * servings).toFixed(1)),
+        carbs: Number((food.carbs * servings).toFixed(1)),
+        fat: Number((food.fat * servings).toFixed(1)),
+        cost: Math.round(food.cost * servings),
+        emoji: food.emoji,
+      },
+    ]);
+    setIsModalOpen(false);
   };
 
-  const removeMeal = (id: number) => {
+  const deleteMeal = (id: number) => {
     setLoggedMeals((prev) => prev.filter((m) => m.id !== id));
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">
-      {/* Top Header */}
-      <header className="border-b border-emerald-900/30 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <Sparkles className="w-6 h-6 text-slate-950 font-black" />
+    <div className="min-h-screen bg-[#F0F3F1] flex justify-center py-0 md:py-8 font-sans antialiased text-slate-800">
+      <div className="w-full max-w-[430px] bg-[#FAFCFB] min-h-screen md:min-h-[890px] md:rounded-[44px] shadow-2xl border border-slate-200/60 flex flex-col overflow-hidden relative">
+        
+        {/* Header */}
+        <div className="pt-6 px-6 pb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-[#0E7A53] flex items-center justify-center text-white shadow-md shadow-emerald-800/20">
+              <Sparkles className="w-5 h-5 text-emerald-200"/>
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-                Oravita <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">AI Bio-Sync</span>
-              </h1>
-              <p className="text-xs text-slate-400">Eat with your biology. Master your metabolism.</p>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight">Oravita</h1>
+              <p className="text-[11px] font-semibold text-emerald-700 tracking-wide uppercase">AI Metabolic Health</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs text-slate-400">Daily Food Budget</p>
-              <p className="text-sm font-semibold text-emerald-400">₹{totals.cost} / ₹{dailyBudget}</p>
-            </div>
+          <button
+            onClick={() => setGender(gender === "female" ? "male" : "female")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
+          >
+            <User className="w-3.5 h-3.5 text-slate-500"/>
+            <span>{gender === "female" ? "Female" : "Male"}</span>
+          </button>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="px-6 py-2">
+          <div className="bg-[#EBEFED] p-1 rounded-2xl flex">
+            <button
+              onClick={() => setActiveTab("today")}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+                activeTab === "today" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setActiveTab("progress")}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+                activeTab === "progress" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+              }`}
+            >
+              Progress Report
+            </button>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Biological Profile Configuration */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="font-semibold text-white flex items-center gap-2">
-                <Activity className="w-5 h-5 text-emerald-400" /> Biological Engine Profile
-              </h2>
-              <span className="text-xs text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-md border border-emerald-800/40">Realtime Sync</span>
-            </div>
-
-            {/* Gender Toggle */}
-            <div>
-              <label className="text-xs text-slate-400 font-medium">Gender</label>
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <button
-                  onClick={() => setGender("female")}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition ${
-                    gender === "female"
-                      ? "bg-pink-600 text-white shadow-lg shadow-pink-600/30"
-                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                  }`}
-                >
-                  Female (Cycle-Aware)
-                </button>
-                <button
-                  onClick={() => setGender("male")}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition ${
-                    gender === "male"
-                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
-                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                  }`}
-                >
-                  Male
-                </button>
-              </div>
-            </div>
-
-            {/* Menstrual Phase Selector (If Female) */}
-            {gender === "female" && (
-              <div className="p-3 rounded-xl bg-pink-950/30 border border-pink-900/40 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-pink-300 flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-pink-400" /> Menstrual Cycle Phase
-                  </label>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-2 space-y-5 pb-24">
+          {activeTab === "today" ? (
+            <>
+              {/* Date Strip */}
+              <div className="flex items-center justify-between py-1">
+                {[11, 12, 13, 14, 15, 16, 17].map((d) => (
                   <button
-                    onClick={() => setMenstrualPhase("follicular")}
-                    className={`py-1.5 px-2 rounded-lg text-xs font-medium transition ${
-                      menstrualPhase === "follicular"
-                        ? "bg-pink-600 text-white"
-                        : "bg-slate-800/80 text-slate-300"
+                    key={d}
+                    onClick={() => setSelectedDay(d)}
+                    className={`w-10 h-13 py-2 rounded-2xl flex flex-col items-center justify-center transition ${
+                      selectedDay === d
+                        ? "bg-[#0E7A53] text-white shadow-md shadow-emerald-900/20"
+                        : "text-slate-400 hover:bg-slate-100"
                     }`}
                   >
-                    Follicular (Day 1-14)
-                  </button>
-                  <button
-                    onClick={() => setMenstrualPhase("luteal")}
-                    className={`py-1.5 px-2 rounded-lg text-xs font-medium transition ${
-                      menstrualPhase === "luteal"
-                        ? "bg-pink-600 text-white"
-                        : "bg-slate-800/80 text-slate-300"
-                    }`}
-                  >
-                    Luteal (Day 15-28)
-                  </button>
-                </div>
-                <p className="text-[11px] text-pink-200/80 leading-relaxed">
-                  {menstrualPhase === "luteal" 
-                    ? "✨ Luteal Phase increases resting expenditure by ~100-300 kcal. Craving complex carbs is natural; temporary fluid weight is normal."
-                    : "⚡ Follicular Phase: Higher insulin sensitivity and energy levels. Great for progressive overload."}
-                </p>
-              </div>
-            )}
-
-            {/* Goal Selector */}
-            <div>
-              <label className="text-xs text-slate-400 font-medium">Metabolic Trajectory</label>
-              <div className="grid grid-cols-3 gap-2 mt-1">
-                {[
-                  { id: "fat_loss", label: "Fat Loss" },
-                  { id: "maintenance", label: "Maintain" },
-                  { id: "muscle_gain", label: "Build Muscle" },
-                ].map((g) => (
-                  <button
-                    key={g.id}
-                    onClick={() => setGoal(g.id as any)}
-                    className={`py-2 px-2 rounded-xl text-xs font-semibold transition ${
-                      goal === g.id
-                        ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
-                        : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                    }`}
-                  >
-                    {g.label}
+                    <span className="text-[10px] font-medium uppercase">
+                      {["S", "M", "T", "W", "T", "F", "S"][(d + 4) % 7]}
+                    </span>
+                    <span className="text-xs font-extrabold mt-0.5">{d}</span>
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* Hardgainer Toggle */}
-            {goal === "muscle_gain" && (
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800/60 border border-slate-700">
-                <div>
-                  <p className="text-xs font-semibold text-white flex items-center gap-1">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" /> Skinny / Fast Metabolism
-                  </p>
-                  <p className="text-[11px] text-slate-400">Hardgainer needing high caloric density</p>
+              {/* Calorie Arc Display */}
+              <div className="p-6 rounded-[36px] bg-white border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col items-center">
+                <div className="relative w-48 h-48 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#F1F5F3" strokeWidth="9" fill="transparent" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="#0E7A53"
+                      strokeWidth="9"
+                      strokeDasharray="251.2"
+                      strokeDashoffset={251.2 - (251.2 * calPercent) / 100}
+                      strokeLinecap="round"
+                      fill="transparent"
+                      className="transition-all duration-700 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center text-center">
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center mb-1">
+                      <Flame className="w-4 h-4 text-[#0E7A53] fill-emerald-600"/>
+                    </div>
+                    <span className="text-3xl font-black text-slate-900 tracking-tight">
+                      {remainingCals.toLocaleString()}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Remaining Kcal
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-700 mt-0.5">
+                      {consumed.cals} / {targets.baseCals} kcal
+                    </span>
+                  </div>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={isHardgainer}
-                  onChange={(e) => setIsHardgainer(e.target.checked)}
-                  className="w-5 h-5 accent-emerald-500 rounded cursor-pointer"
-                />
-              </div>
-            )}
 
-            {/* Body Metrics Sliders */}
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs text-slate-400">Weight (kg)</label>
-                <input
-                  type="number"
-                  value={weight}
-                  onChange={(e) => setWeight(Number(e.target.value))}
-                  className="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm font-semibold text-white"
-                />
+                {/* Macro Pills */}
+                <div className="w-full grid grid-cols-3 gap-2.5 mt-4">
+                  <div className="bg-[#F8FAF9] p-3 rounded-2xl border border-slate-100 flex flex-col">
+                    <span className="text-[10px] font-bold text-sky-600 uppercase">Protein</span>
+                    <span className="text-base font-black text-slate-900 mt-1">{consumed.protein}g</span>
+                    <span className="text-[10px] text-slate-400">/ {targets.protein}g</span>
+                    <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                      <div className="bg-sky-500 h-full rounded-full" style={{ width: `${Math.min(100, (consumed.protein / targets.protein) * 100)}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F8FAF9] p-3 rounded-2xl border border-slate-100 flex flex-col">
+                    <span className="text-[10px] font-bold text-amber-600 uppercase">Carbs</span>
+                    <span className="text-base font-black text-slate-900 mt-1">{consumed.carbs}g</span>
+                    <span className="text-[10px] text-slate-400">/ {targets.carbs}g</span>
+                    <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                      <div className="bg-amber-500 h-full rounded-full" style={{ width: `${Math.min(100, (consumed.carbs / targets.carbs) * 100)}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F8FAF9] p-3 rounded-2xl border border-slate-100 flex flex-col">
+                    <span className="text-[10px] font-bold text-rose-500 uppercase">Fat</span>
+                    <span className="text-base font-black text-slate-900 mt-1">{consumed.fat}g</span>
+                    <span className="text-[10px] text-slate-400">/ {targets.fat}g</span>
+                    <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                      <div className="bg-rose-500 h-full rounded-full" style={{ width: `${Math.min(100, (consumed.fat / targets.fat) * 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="text-xs text-slate-400">Height (cm)</label>
-                <input
-                  type="number"
-                  value={height}
-                  onChange={(e) => setHeight(Number(e.target.value))}
-                  className="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm font-semibold text-white"
-                />
+
+              {/* Bio Sync Controls */}
+              <div className="p-4 rounded-3xl bg-white border border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600"/> Metabolic Personalization
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Active Bio-Sync
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setGoal("fat_loss")}
+                    className={`py-2 px-3 rounded-2xl text-xs font-bold transition ${
+                      goal === "fat_loss" ? "bg-[#0E7A53] text-white" : "bg-slate-50 text-slate-600"
+                    }`}
+                  >
+                    Fat Loss (-450 kcal)
+                  </button>
+                  <button
+                    onClick={() => setGoal("muscle_gain")}
+                    className={`py-2 px-3 rounded-2xl text-xs font-bold transition ${
+                      goal === "muscle_gain" ? "bg-[#0E7A53] text-white" : "bg-slate-50 text-slate-600"
+                    }`}
+                  >
+                    Build Muscle
+                  </button>
+                </div>
+
+                {goal === "muscle_gain" && (
+                  <label className="flex items-center justify-between p-3 rounded-2xl bg-amber-50/70 border border-amber-200/50 cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-amber-600"/>
+                      <div>
+                        <p className="text-xs font-bold text-amber-900">Skinny Hardgainer Mode</p>
+                        <p className="text-[10px] text-amber-700">+400 kcal surplus for fast metabolisms</p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isHardgainer}
+                      onChange={(e) => setIsHardgainer(e.target.checked)}
+                      className="w-4 h-4 accent-amber-600 rounded"
+                    />
+                  </label>
+                )}
+
+                {gender === "female" && (
+                  <div className="p-3 rounded-2xl bg-pink-50/60 border border-pink-100 space-y-2">
+                    <span className="text-[11px] font-bold text-pink-900 flex items-center gap-1">
+                      <Heart className="w-3.5 h-3.5 text-pink-500"/> Menstrual Phase Sync
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setMenstrualPhase("follicular")}
+                        className={`py-1.5 rounded-xl text-[10px] font-extrabold transition ${
+                          menstrualPhase === "follicular" ? "bg-pink-500 text-white" : "bg-white text-pink-800 border border-pink-200"
+                        }`}
+                      >
+                        Follicular (Day 1-14)
+                      </button>
+                      <button
+                        onClick={() => setMenstrualPhase("luteal")}
+                        className={`py-1.5 rounded-xl text-[10px] font-extrabold transition ${
+                          menstrualPhase === "luteal" ? "bg-pink-500 text-white" : "bg-white text-pink-800 border border-pink-200"
+                        }`}
+                      >
+                        Luteal (Day 15-28)
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-pink-800">
+                      {menstrualPhase === "luteal"
+                        ? "✨ Luteal Phase: Progesterone elevates expenditure (+180 kcal). Minor fluid retention is expected."
+                        : "⚡ Follicular Phase: High insulin sensitivity & peak stamina."}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="text-xs text-slate-400">Age</label>
-                <input
-                  type="number"
-                  value={age}
-                  onChange={(e) => setAge(Number(e.target.value))}
-                  className="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm font-semibold text-white"
-                />
+
+              {/* Water & Budget */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 rounded-3xl bg-white border border-slate-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-sky-600 uppercase flex items-center gap-1">
+                      <Droplets className="w-3.5 h-3.5 text-sky-500"/> Water Intake
+                    </span>
+                    <p className="text-base font-black text-slate-900 mt-0.5">
+                      {(waterGlasses * 0.25).toFixed(1)}L <span className="text-[10px] text-slate-400 font-normal">/ 2.5L</span>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setWaterGlasses((v) => v + 1)}
+                    className="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-sm shadow-sm active:scale-95"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-3xl bg-white border border-slate-100 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase flex items-center gap-1">
+                    <Target className="w-3.5 h-3.5 text-emerald-600"/> Daily Budget
+                  </span>
+                  <p className="text-base font-black text-slate-900 mt-0.5">
+                    ₹{consumed.cost} <span className="text-[10px] text-slate-400 font-normal">/ ₹{dailyBudget}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Logged Meals */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <Utensils className="w-4 h-4 text-emerald-700"/> Today's Logged Meals
+                  </h3>
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#0E7A53] hover:bg-emerald-800 text-white text-xs font-bold active:scale-95 transition"
+                  >
+                    <Plus className="w-3.5 h-3.5"/> Log Food
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {loggedMeals.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 rounded-3xl bg-white border border-slate-100 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-lg border border-slate-100">
+                          {item.emoji}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-900">{item.name}</span>
+                            <span className="text-[9px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded-md">
+                              {item.mealType}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            {item.servings} serving • {item.cals} kcal • {item.protein}g P • ₹{item.cost}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => deleteMeal(item.id)}
+                        className="p-1.5 text-slate-300 hover:text-rose-500 rounded-xl transition"
+                      >
+                        <Trash2 className="w-4 h-4"/>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Progress Analytics */
+            <div className="space-y-4 pt-2">
+              <div className="p-5 rounded-3xl bg-white border border-slate-100 space-y-3">
+                <span className="text-xs font-extrabold text-slate-900">7-Day Caloric Adherence</span>
+                <div className="h-40 flex items-end justify-between pt-4 px-2">
+                  {[
+                    { day: "M", h: 80, val: "1.4k" },
+                    { day: "T", h: 90, val: "1.5k" },
+                    { day: "W", h: 70, val: "1.3k" },
+                    { day: "T", h: 100, val: "1.6k" },
+                    { day: "F", h: 85, val: "1.4k" },
+                    { day: "S", h: 95, val: "1.5k" },
+                    { day: "S", h: 75, val: "1.4k" },
+                  ].map((bar, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1.5">
+                      <span className="text-[9px] text-slate-400 font-semibold">{bar.val}</span>
+                      <div className="w-7 bg-[#0E7A53] rounded-t-xl" style={{ height: `${bar.h}px` }} />
+                      <span className="text-[10px] font-bold text-slate-600">{bar.day}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-3xl bg-white border border-slate-100 space-y-2">
+                <span className="text-xs font-extrabold text-slate-900">Weight & Trend</span>
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/50">
+                  <div>
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase">Current Weight</span>
+                    <p className="text-xl font-black text-slate-900">65.2 kg</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase">Target</span>
+                    <p className="text-xl font-black text-emerald-700">60.0 kg</p>
+                  </div>
+                </div>
               </div>
             </div>
-
-            {/* Daily INR Budget */}
-            <div>
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
-                <span>Daily Food Budget (INR)</span>
-                <span className="font-semibold text-emerald-400">₹{dailyBudget}/day</span>
-              </div>
-              <input
-                type="range"
-                min="100"
-                max="800"
-                step="25"
-                value={dailyBudget}
-                onChange={(e) => setDailyBudget(Number(e.target.value))}
-                className="w-full accent-emerald-500 cursor-pointer"
-              />
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Right Column: Dynamic Targets & Indian Food Tracker */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Daily Biological Macro Dashboard */}
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-emerald-400 tracking-wider uppercase">Biological Targets</span>
-                <h3 className="text-2xl font-black text-white flex items-baseline gap-2 mt-0.5">
-                  {totals.cals} <span className="text-sm font-normal text-slate-400">/ {targets.cals} kcal</span>
-                </h3>
-              </div>
-              <div className="text-right">
-                <span className="text-xs text-slate-400">Budget Spent</span>
-                <p className="text-xl font-bold text-emerald-400">₹{totals.cost} <span className="text-xs text-slate-500 font-normal">/ ₹{dailyBudget}</span></p>
-              </div>
-            </div>
-
-            {/* Macro Bars */}
-            <div className="grid grid-cols-3 gap-3 pt-2">
-              <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/60">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Protein</span>
-                  <span className="font-bold text-emerald-400">{totals.protein}g / {targets.protein}g</span>
-                </div>
-                <div className="w-full bg-slate-700/50 h-2 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className="bg-emerald-500 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, (totals.protein / targets.protein) * 100)}%` }}
-                  />
-                </div>
+        {/* Modal Sheet for Logging Food */}
+        {isModalOpen && (
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end">
+            <div className="w-full bg-white rounded-t-[36px] p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-slate-900">Log Indian Food</h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                >
+                  <X className="w-4 h-4"/>
+                </button>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/60">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Carbs</span>
-                  <span className="font-bold text-amber-400">{totals.carbs}g / {targets.carbs}g</span>
-                </div>
-                <div className="w-full bg-slate-700/50 h-2 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className="bg-amber-500 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, (totals.carbs / targets.carbs) * 100)}%` }}
-                  />
-                </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(["Breakfast", "Lunch", "Dinner", "Snack"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMealType(m)}
+                    className={`py-1.5 rounded-xl text-[11px] font-bold transition ${
+                      mealType === m ? "bg-[#0E7A53] text-white" : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/60">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Fats</span>
-                  <span className="font-bold text-sky-400">{totals.fat}g / {targets.fat}g</span>
-                </div>
-                <div className="w-full bg-slate-700/50 h-2 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className="bg-sky-500 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, (totals.fat / targets.fat) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Engine Insights */}
-            <div className="pt-2 border-t border-slate-800">
-              {targets.notes.map((note, idx) => (
-                <p key={idx} className="text-xs text-slate-300 flex items-start gap-1.5 mt-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                  {note}
-                </p>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Indian Food Logger */}
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <UtensilsCrossed className="w-4 h-4 text-emerald-400" /> Log Indian Meal
-            </h3>
-
-            <div className="flex flex-col sm:flex-row gap-3">
               <select
                 value={selectedFoodId}
                 onChange={(e) => setSelectedFoodId(Number(e.target.value))}
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"
+                className="w-full p-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-800 bg-white focus:outline-none"
               >
-                {FOOD_CATALOG.map((f) => (
+                {INDIAN_FOODS.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.name} ({f.hindi}) — {f.cals} kcal, {f.protein}g P (₹{f.cost})
+                    {f.emoji} {f.name} — {f.cals} kcal, {f.protein}g Protein (₹{f.cost})
                   </option>
                 ))}
               </select>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0.5"
-                  step="0.5"
-                  value={servingInput}
-                  onChange={(e) => setServingInput(Number(e.target.value))}
-                  className="w-20 bg-slate-800 border border-slate-700 rounded-xl p-2 text-sm text-center font-bold text-white"
-                />
-                <button
-                  onClick={addMeal}
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-1 shadow-md shadow-emerald-500/20"
-                >
-                  <Plus className="w-4 h-4" /> Add
-                </button>
-              </div>
-            </div>
-
-            {/* Logged Meal Items */}
-            <div className="divide-y divide-slate-800/80">
-              {loggedMeals.map((meal) => (
-                <div key={meal.id} className="py-2.5 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-white">{meal.name}</p>
-                    <p className="text-xs text-slate-400">
-                      {meal.servings} serving(s) • {meal.cals} kcal • {meal.protein}g P • ₹{meal.cost}
-                    </p>
-                  </div>
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-xs font-bold text-slate-700">Servings</span>
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => removeMeal(meal.id)}
-                    className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition"
+                    onClick={() => setServings((s) => Math.max(0.5, s - 0.5))}
+                    className="w-7 h-7 rounded-lg bg-white border border-slate-200 font-black text-slate-700"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    -
+                  </button>
+                  <span className="text-xs font-black text-slate-900 w-8 text-center">{servings}</span>
+                  <button
+                    onClick={() => setServings((s) => s + 0.5)}
+                    className="w-7 h-7 rounded-lg bg-white border border-slate-200 font-black text-slate-700"
+                  >
+                    +
                   </button>
                 </div>
-              ))}
+              </div>
+
+              <button
+                onClick={addMeal}
+                className="w-full py-3 rounded-2xl bg-[#0E7A53] hover:bg-emerald-800 text-white font-black text-sm shadow-lg shadow-emerald-900/20 active:scale-98 transition"
+              >
+                Confirm & Log Meal
+              </button>
             </div>
           </div>
-        </div>
-      </main>
+        )}
+
+      </div>
     </div>
   );
 }
