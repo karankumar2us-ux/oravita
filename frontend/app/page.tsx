@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   Flame,
   Plus,
   Trash2,
+  Calendar,
   Sparkles,
   Droplets,
   Heart,
@@ -12,7 +13,15 @@ import {
   Zap,
   Target,
   User,
-  X
+  X,
+  Camera,
+  MessageSquare,
+  Send,
+  Bot,
+  Upload,
+  CheckCircle2,
+  Loader2,
+  HelpCircle
 } from "lucide-react";
 
 interface FoodItem {
@@ -41,6 +50,7 @@ export default function OravitaApp() {
   const [activeTab, setActiveTab] = useState<"today" | "progress">("today");
   const [selectedDay, setSelectedDay] = useState<number>(14);
 
+  // Bio state
   const [gender, setGender] = useState<"female" | "male">("female");
   const [goal, setGoal] = useState<"fat_loss" | "muscle_gain">("fat_loss");
   const [isHardgainer, setIsHardgainer] = useState(false);
@@ -48,7 +58,12 @@ export default function OravitaApp() {
   const [waterGlasses, setWaterGlasses] = useState(6);
   const [dailyBudget, setDailyBudget] = useState(250);
 
+  // Modal Dialogs
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCoachOpen, setIsCoachOpen] = useState(false);
+
+  // Meal Logging
   const [selectedFoodId, setSelectedFoodId] = useState(1);
   const [servings, setServings] = useState(1);
   const [mealType, setMealType] = useState<"Breakfast" | "Lunch" | "Dinner" | "Snack">("Lunch");
@@ -58,6 +73,21 @@ export default function OravitaApp() {
     { id: 2, name: "Moong Dal Tadka", mealType: "Lunch", servings: 1, cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, emoji: "🥣" },
     { id: 3, name: "Fresh Raw Paneer", mealType: "Snack", servings: 1, cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45, emoji: "🧀" },
   ]);
+
+  // AI Camera Scanner State
+  const [scannedImage, setScannedImage] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<{ name: string; cals: number; p: number; c: number; f: number; cost: number; emoji: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // AI Coach Chat State
+  const [messages, setMessages] = useState<Array<{ sender: "user" | "bot"; text: string }>>([
+    {
+      sender: "bot",
+      text: "Hello! I'm your Oravita BioCoach. I can suggest high-protein meals within your daily ₹250 budget or help optimize nutrition for your cycle phase."
+    }
+  ]);
+  const [chatInput, setChatInput] = useState("");
 
   const targets = useMemo(() => {
     let baseCals = 1800;
@@ -126,6 +156,77 @@ export default function OravitaApp() {
 
   const deleteMeal = (id: number) => {
     setLoggedMeals((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  // Image Upload & Recognition Simulation
+  const handleImageCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setScannedImage(previewUrl);
+    setIsScanning(true);
+    setScanResult(null);
+
+    setTimeout(() => {
+      setIsScanning(false);
+      // Simulated Indian Plate Multi-item Detection
+      setScanResult({
+        name: "Paneer Bhurji & 2 Phulkas",
+        cals: 395,
+        p: 21.5,
+        c: 38.0,
+        f: 14.2,
+        cost: 42,
+        emoji: "🥘"
+      });
+    }, 1800);
+  };
+
+  const confirmScannedMeal = () => {
+    if (!scanResult) return;
+    setLoggedMeals((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        name: scanResult.name,
+        mealType: "Lunch",
+        servings: 1,
+        cals: scanResult.cals,
+        protein: scanResult.p,
+        carbs: scanResult.c,
+        fat: scanResult.f,
+        cost: scanResult.cost,
+        emoji: scanResult.emoji,
+      }
+    ]);
+    setIsCameraOpen(false);
+    setScannedImage(null);
+    setScanResult(null);
+  };
+
+  // AI NutriCoach Response Handler
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+
+    const userText = chatInput;
+    setMessages((prev) => [...prev, { sender: "user", text: userText }]);
+    setChatInput("");
+
+    setTimeout(() => {
+      let botReply = `You currently have ${remainingCals} kcal remaining. `;
+      const lower = userText.toLowerCase();
+
+      if (lower.includes("protein") || lower.includes("budget") || lower.includes("cheap")) {
+        botReply += "For high protein under budget: Consider 4 tbsp Sattu drink (13g protein, ₹12) or 2 Boiled Eggs (12.6g protein, ₹14).";
+      } else if (lower.includes("craving") || lower.includes("sweet") || lower.includes("luteal")) {
+        botReply += "During the luteal phase, progesterone can trigger carb cravings. Try roasted makhana or a small bowl of curd with a touch of honey.";
+      } else {
+        botReply += `To reach your ${targets.protein}g protein target, add a serving of Paneer (18.3g P) or Rajma Masala to dinner.`;
+      }
+
+      setMessages((prev) => [...prev, { sender: "bot", text: botReply }]);
+    }, 600);
   };
 
   return (
@@ -261,6 +362,22 @@ export default function OravitaApp() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Action Toolbar: AI Camera Scanner & NutriCoach */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setIsCameraOpen(true)}
+                  className="p-3.5 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-center gap-2 shadow-md shadow-emerald-900/15 active:scale-98 transition font-bold text-xs"
+                >
+                  <Camera className="w-4 h-4" /> AI Plate Scanner
+                </button>
+                <button
+                  onClick={() => setIsCoachOpen(true)}
+                  className="p-3.5 rounded-3xl bg-white border border-slate-200 text-slate-800 flex items-center justify-center gap-2 shadow-sm active:scale-98 transition font-bold text-xs hover:bg-slate-50"
+                >
+                  <MessageSquare className="w-4 h-4 text-emerald-600" /> BioCoach AI
+                </button>
               </div>
 
               {/* Bio Sync Controls */}
@@ -460,7 +577,7 @@ export default function OravitaApp() {
           )}
         </div>
 
-        {/* Modal Sheet for Logging Food */}
+        {/* Modal Sheet 1: Manual Food Logger */}
         {isModalOpen && (
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end">
             <div className="w-full bg-white rounded-t-[36px] p-6 space-y-4">
@@ -525,6 +642,167 @@ export default function OravitaApp() {
               >
                 Confirm & Log Meal
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Sheet 2: AI Plate Scanner Camera Drawer */}
+        {isCameraOpen && (
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end">
+            <div className="w-full bg-white rounded-t-[36px] p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-emerald-700" /> AI Food Vision Scanner
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Snap a photo of your thali or meal plate</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsCameraOpen(false);
+                    setScannedImage(null);
+                    setScanResult(null);
+                  }}
+                  className="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                >
+                  <X className="w-4 h-4"/>
+                </button>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageCapture}
+                className="hidden"
+              />
+
+              {!scannedImage ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-emerald-300 bg-emerald-50/50 rounded-3xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-emerald-50 transition"
+                >
+                  <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-slate-800">Tap to take photo or upload plate</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Supports Roti, Dal, Rice, Paneer, Sabzi, Eggs</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                    <img src={scannedImage} alt="Scanned meal" className="w-full h-full object-cover" />
+                    {isScanning && (
+                      <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+                        <span className="text-xs font-bold">Analyzing Indian plate components...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {scanResult && (
+                    <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> {scanResult.emoji} {scanResult.name}
+                        </span>
+                        <span className="text-xs font-bold text-emerald-800">₹{scanResult.cost}</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 text-center pt-1">
+                        <div className="bg-white p-1.5 rounded-xl border border-emerald-100">
+                          <span className="text-[9px] text-slate-400 font-semibold block">Calories</span>
+                          <span className="text-xs font-black text-slate-800">{scanResult.cals}</span>
+                        </div>
+                        <div className="bg-white p-1.5 rounded-xl border border-emerald-100">
+                          <span className="text-[9px] text-slate-400 font-semibold block">Protein</span>
+                          <span className="text-xs font-black text-sky-600">{scanResult.p}g</span>
+                        </div>
+                        <div className="bg-white p-1.5 rounded-xl border border-emerald-100">
+                          <span className="text-[9px] text-slate-400 font-semibold block">Carbs</span>
+                          <span className="text-xs font-black text-amber-600">{scanResult.c}g</span>
+                        </div>
+                        <div className="bg-white p-1.5 rounded-xl border border-emerald-100">
+                          <span className="text-[9px] text-slate-400 font-semibold block">Fat</span>
+                          <span className="text-xs font-black text-rose-600">{scanResult.f}g</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={confirmScannedMeal}
+                        className="w-full py-2.5 mt-2 rounded-xl bg-[#0E7A53] hover:bg-emerald-800 text-white font-extrabold text-xs shadow-md transition"
+                      >
+                        Confirm & Add to Diary
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal Sheet 3: AI NutriCoach Assistant Drawer */}
+        {isCoachOpen && (
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end">
+            <div className="w-full bg-white rounded-t-[36px] p-6 space-y-4 h-[75vh] flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-900">BioCoach AI</h3>
+                    <p className="text-[10px] text-slate-400">Contextual to your ₹{dailyBudget} budget & biological phase</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsCoachOpen(false)}
+                  className="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                >
+                  <X className="w-4 h-4"/>
+                </button>
+              </div>
+
+              {/* Chat Message Stream */}
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                {messages.map((m, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${
+                        m.sender === "user"
+                          ? "bg-[#0E7A53] text-white rounded-br-sm"
+                          : "bg-slate-100 text-slate-800 rounded-bl-sm"
+                      }`}
+                    >
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Input Area */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <input
+                  type="text"
+                  placeholder="Ask: 'What can I eat under ₹50 with 20g protein?'"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                  className="flex-1 bg-slate-100 border-none rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  className="p-2 bg-[#0E7A53] hover:bg-emerald-800 text-white rounded-xl transition shadow-sm"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}
