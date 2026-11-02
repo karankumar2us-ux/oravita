@@ -26,7 +26,9 @@ if DATABASE_URL:
         from sqlalchemy.orm import declarative_base, sessionmaker
 
         if DATABASE_URL.startswith("postgres://"):
-            DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+            DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif DATABASE_URL.startswith("postgresql://") and "+psycopg2" not in DATABASE_URL:
+            DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
         elif not DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("sqlite"):
             DATABASE_URL = f"postgresql://{DATABASE_URL}"
 
