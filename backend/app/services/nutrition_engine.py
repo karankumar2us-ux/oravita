@@ -118,4 +118,7 @@ class NutritionEngine:
             target_calories=round(target_calories),
             protein_g=protein_g,
             carbs_g=carbs_g,
-            fat_g=fat_
+            fat_g=fat_g,
+            hydration_liters=hydration_liters,
+            notes=notes
+        )
