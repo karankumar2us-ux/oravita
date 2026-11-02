@@ -17,7 +17,7 @@ app.add_middleware(
 )
 
 # Optional Database Setup (Safe fallback to in-memory if DB fails or is unset)
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip().strip("'").strip('"')
 SessionLocal = None
 
 if DATABASE_URL:
@@ -27,6 +27,8 @@ if DATABASE_URL:
 
         if DATABASE_URL.startswith("postgres://"):
             DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        elif not DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("sqlite"):
+            DATABASE_URL = f"postgresql://{DATABASE_URL}"
 
         engine = create_engine(DATABASE_URL)
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
