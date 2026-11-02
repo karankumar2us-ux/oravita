@@ -101,19 +101,15 @@ class NutritionEngine:
             )
 
         # 3. Macronutrient split
-        # Protein (4 kcal/g)
         protein_g = round(profile.weight_kg * protein_ratio)
         protein_cals = protein_g * 4.0
 
-        # Fats (9 kcal/g): 28% of total calories
         fat_cals = target_calories * 0.28
         fat_g = round(fat_cals / 9.0)
 
-        # Carbs (4 kcal/g): Remaining energy
         carb_cals = max(0.0, target_calories - (protein_cals + fat_cals))
         carbs_g = round(carb_cals / 4.0)
 
-        # Hydration estimation: 35ml per kg + activity allowance
         hydration_liters = round((profile.weight_kg * 0.035) + 0.5, 1)
 
         return TargetNutritionPlan(
@@ -122,7 +118,4 @@ class NutritionEngine:
             target_calories=round(target_calories),
             protein_g=protein_g,
             carbs_g=carbs_g,
-            fat_g=fat_g,
-            hydration_liters=hydration_liters,
-            notes=notes
-        )
+            fat_g=fat_
