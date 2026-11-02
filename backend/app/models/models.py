@@ -1,8 +1,3 @@
-"""
-Oravita Database Schema (SQLAlchemy Models)
-Tracks users, hormonal biological profiles, Indian food dataset, and daily logs.
-"""
-
 from datetime import datetime, date
 from enum import Enum as PyEnum
 from sqlalchemy import (
@@ -55,26 +50,22 @@ class UserProfile(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
-    
     age = Column(Integer, nullable=False)
     gender = Column(Enum(GenderEnum), nullable=False)
     height_cm = Column(Float, nullable=False)
     weight_kg = Column(Float, nullable=False)
     target_weight_kg = Column(Float, nullable=True)
-    
     activity_level = Column(Enum(ActivityEnum), default=ActivityEnum.SEDENTARY)
     fitness_goal = Column(Enum(GoalEnum), default=GoalEnum.MAINTENANCE)
     is_hardgainer = Column(Boolean, default=False)
-    
     tracks_cycle = Column(Boolean, default=False)
     last_period_start_date = Column(Date, nullable=True)
     cycle_length_days = Column(Integer, default=28)
-    
     daily_budget_inr = Column(Float, default=200.0)
     dietary_preference = Column(String(50), default="vegetarian")
     allergies = Column(Text, nullable=True)
-    
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     user = relationship("User", back_populates="profile")
 
 class FoodItem(Base):
@@ -87,7 +78,6 @@ class FoodItem(Base):
     regional_cuisine = Column(String(100), default="North Indian")
     is_vegetarian = Column(Boolean, default=True)
     is_vegan = Column(Boolean, default=False)
-    
     serving_unit = Column(String(50), default="100g")
     serving_weight_grams = Column(Float, default=100.0)
     calories = Column(Float, nullable=False)
