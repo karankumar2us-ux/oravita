@@ -5,149 +5,7 @@ import {
   Flame,
   Plus,
   Trash2,
-  Calendar,
   Sparkles,
-  TrendingUp,
-  Droplets,
-  Heart,
-  Utensils,
-  Zap,
-  Target,
-  User,
-  X
-} from "lucide-react";
-
-interface FoodItem {
-  id: number;
-  name: string;
-  category: string;
-  cals: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  cost: number;
-  emoji: string;
-}
-
-const FOOD_LIST: FoodItem[] = [
-  { id: 1, name: "Whole Wheat Roti", category: "Grains", cals: 104, protein: 3.1, carbs: 20.2, fat: 0.5, cost: 4, emoji: "🫓" },
-  { id: 2, name: "Moong Dal Tadka", category: "Lentils", cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, emoji: "🥣" },
-  { id: 3, name: "Fresh Paneer Cube", category: "Dairy", cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45, emoji: "🧀" },
-  { id: 4, name: "Sattu Protein Drink", category: "Superfood", cals: 205, protein: 13.0, carbs: 32.0, fat: 2.5, cost: 12, emoji: "🥤" },
-  { id: 5, name: "Boiled Egg (Large)", category: "Eggs", cals: 78, protein: 6.3, carbs: 0.6, fat: 5.3, cost: 7, emoji: "🥚" },
-  { id: 6, name: "Steamed Basmati Rice", category: "Grains", cals: 195, protein: 4.0, carbs: 43.0, fat: 0.4, cost: 8, emoji: "🍚" },
-  { id: 7, name: "Probiotic Curd (Dahi)", category: "Dairy", cals: 92, protein: 4.5, carbs: 6.0, fat: 5.0, cost: 12, emoji: "🥛" },
-  { id: 8, name: "Rajma Masala", category: "Lentils", cals: 210, protein: 11.2, carbs: 31.0, fat: 4.5, cost: 22, emoji: "🍛" },
-];
-
-export default function App() {
-  const [activeTab, setActiveTab] = useState<"today" | "progress">("today");
-  const [selectedDay, setSelectedDay] = useState(14);
-
-  // Bio state
-  const [gender, setGender] = useState<"female" | "male">("female");
-  const [goal, setGoal] = useState<"fat_loss" | "muscle_gain">("fat_loss");
-  const [isHardgainer, setIsHardgainer] = useState(false);
-  const [menstrualPhase, setMenstrualPhase] = useState<"follicular" | "luteal">("follicular");
-  const [waterGlasses, setWaterGlasses] = useState(6);
-  const [dailyBudget, setDailyBudget] = useState(250);
-
-  // Modal Sheet for Adding Meal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedFoodId, setSelectedFoodId] = useState(1);
-  const [servings, setServings] = useState(1);
-  const [selectedMealType, setSelectedMealType] = useState<"Breakfast" | "Lunch" | "Dinner" | "Snack">("Breakfast");
-
-  const [loggedMeals, setLoggedMeals] = useState([
-    { id: 1, name: "Whole Wheat Roti", mealType: "Lunch", servings: 2, cals: 208, protein: 6.2, carbs: 40.4, fat: 1.0, cost: 8, emoji: "🫓" },
-    { id: 2, name: "Moong Dal Tadka", mealType: "Lunch", servings: 1, cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, emoji: "🥣" },
-    { id: 3, name: "Fresh Paneer Cube", mealType: "Snack", servings: 1, cals: 265, protein: 18.3, carbs: 3.2, fat: 20.8, cost: 45, emoji: "🧀" },
-    { id: 4, name: "Boiled Egg (Large)", mealType: "Breakfast", servings: 2, cals: 156, protein: 12.6, carbs: 1.2, fat: 10.6, cost: 14, emoji: "🥚" },
-  ]);
-
-  const targets = useMemo(() => {
-    let baseCals = 1800;
-    let protein = 120;
-    let carbs = 200;
-    let fat = 50;
-
-    if (goal === "fat_loss") {
-      baseCals = 1450;
-      protein = 130;
-      carbs = 135;
-      fat = 42;
-    } else {
-      baseCals = isHardgainer ? 2550 : 2150;
-      protein = isHardgainer ? 145 : 130;
-      carbs = isHardgainer ? 350 : 280;
-      fat = isHardgainer ? 75 : 60;
-    }
-
-    if (gender === "female" && menstrualPhase === "luteal") {
-      baseCals += 180;
-      carbs += 25;
-      fat += 8;
-    }
-
-    return { baseCals, protein, carbs, fat };
-  }, [goal, isHardgainer, gender, menstrualPhase]);
-
-  const consumed = useMemo(() => {
-    return loggedMeals.reduce(
-      (acc, item) => ({
-        cals: acc.cals + item.cals,
-        protein: acc.protein + item.protein,
-        carbs: acc.carbs + item.carbs,
-        fat: acc.fat + item.fat,
-        cost: acc.cost + item.cost,
-      }),
-      { cals: 0, protein: 0, carbs: 0, fat: 0, cost: 0 }
-    );
-  }, [loggedMeals]);
-
-  const remainingCals = Math.max(0, targets.baseCals - consumed.cals);
-  const calPercent = Math.min(100, Math.round((consumed.cals / targets.baseCals) * 100));
-
-  const handleAddMeal = () => {
-    const food = FOOD_LIST.find((f) => f.id === selectedFoodId);
-    if (!food) return;
-
-    setLoggedMeals((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: food.name,
-        mealType: selectedMealType,
-        servings: servings,
-        cals: Math.round(food.cals * servings),
-        protein: Number((food.protein * servings).toFixed(1)),
-        carbs: Number((food.carbs * servings).toFixed(1)),
-        fat: Number((food.fat *The terminal says:
-`bash: frontend/app/page.tsx: No such file or directory`
-
-Notice the path in your prompt: `@karankumar2us-ux -> /workspaces/oravita/frontend`. 
-You are **already inside the `frontend` folder**, so typing `frontend/app/page.tsx` was looking for `frontend/frontend/app/page.tsx`!
-
-Also, we can deploy directly to Vercel **100% from this bash terminal** using the official Vercel CLI without searching or clicking anything on the website.
-
----
-
-### Step 1: Write the Clean English-Only CaloVision UI
-
-Run this command inside your terminal (since you are inside `frontend`):
-
-```bash
-cat << 'EOF' > app/page.tsx
-"use client";
-
-import React, { useState, useMemo } from "react";
-import {
-  Flame,
-  Plus,
-  Trash2,
-  Calendar,
-  Sparkles,
-  TrendingUp,
   Droplets,
   Heart,
   Utensils,
@@ -183,7 +41,6 @@ export default function OravitaApp() {
   const [activeTab, setActiveTab] = useState<"today" | "progress">("today");
   const [selectedDay, setSelectedDay] = useState<number>(14);
 
-  // Bio state
   const [gender, setGender] = useState<"female" | "male">("female");
   const [goal, setGoal] = useState<"fat_loss" | "muscle_gain">("fat_loss");
   const [isHardgainer, setIsHardgainer] = useState(false);
@@ -191,13 +48,11 @@ export default function OravitaApp() {
   const [waterGlasses, setWaterGlasses] = useState(6);
   const [dailyBudget, setDailyBudget] = useState(250);
 
-  // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFoodId, setSelectedFoodId] = useState(1);
   const [servings, setServings] = useState(1);
   const [mealType, setMealType] = useState<"Breakfast" | "Lunch" | "Dinner" | "Snack">("Lunch");
 
-  // Meals
   const [loggedMeals, setLoggedMeals] = useState([
     { id: 1, name: "Whole Wheat Roti", mealType: "Lunch", servings: 2, cals: 208, protein: 6.2, carbs: 40.4, fat: 1.0, cost: 8, emoji: "🫓" },
     { id: 2, name: "Moong Dal Tadka", mealType: "Lunch", servings: 1, cals: 150, protein: 9.0, carbs: 22.0, fat: 2.5, cost: 15, emoji: "🥣" },
@@ -565,7 +420,7 @@ export default function OravitaApp() {
               </div>
             </>
           ) : (
-            /* Progress Analytics */
+            /* Progress Tab */
             <div className="space-y-4 pt-2">
               <div className="p-5 rounded-3xl bg-white border border-slate-100 space-y-3">
                 <span className="text-xs font-extrabold text-slate-900">7-Day Caloric Adherence</span>
