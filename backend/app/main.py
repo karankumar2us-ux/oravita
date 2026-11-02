@@ -5,8 +5,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-from sqlalchemy import create_engine, Column, Integer, String, Float
-from sqlalchemy.orm import declarative_base, sessionmaker
 
 app = FastAPI(title="Oravita API", version="1.0.0")
 
@@ -18,32 +16,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Optional Database Setup (Safe fallback to in-memory if DB fails or is unset)
 DATABASE_URL = os.getenv("DATABASE_URL", "")
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+SessionLocal = None
 
 if DATABASE_URL:
-    engine = create_engine(DATABASE_URL)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    Base = declarative_base()
+    try:
+        from sqlalchemy import create_engine, Column, Integer, String, Float
+        from sqlalchemy.orm import declarative_base, sessionmaker
 
-    class MealRecord(Base):
-        __tablename__ = "meals"
-        id = Column(Integer, primary_key=True, index=True)
-        name = Column(String, index=True)
-        meal_type = Column(String)
-        servings = Column(Float, default=1.0)
-        cals = Column(Integer)
-        protein = Column(Float)
-        carbs = Column(Float)
-        fat = Column(Float)
-        cost = Column(Integer)
-        emoji = Column(String)
+        if DATABASE_URL.startswith("postgres://"):
+            DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-    Base.metadata.create_all(bind=engine)
-else:
-    SessionLocal = None
+        engine = create_engine(DATABASE_URL)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base = declarative_base()
 
+        class MealRecord(Base):
+            __tablename__ = "meals"
+            id = Column(Integer, primary_key=True, index=True)
+            name = Column(String, index=True)
+            meal_type = Column(String)
+            servings = Column(Float, default=1.0)
+            cals = Column(Integer)
+            protein = Column(Float)
+            carbs = Column(Float)
+            fat = Column(Float)
+            cost = Column(Integer)
+            emoji = Column(String)
+
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"Database connection error, falling back to in-memory: {e}")
+        SessionLocal = None
+
+# Pydantic Models
 class PlateAnalysisRequest(BaseModel):
     image_base64: Optional[str] = None
     note: Optional[str] = ""
@@ -90,7 +97,7 @@ def read_root():
         "service": "Oravita AI Backend",
         "version": "1.0.0",
         "gemini_active": bool(os.getenv("GEMINI_API_KEY")),
-        "db_active": bool(DATABASE_URL)
+        "db_active": bool(SessionLocal is not None)
     }
 
 @app.post("/api/v1/analyze-plate", response_model=NutritionItem)
@@ -107,7 +114,7 @@ async def analyze_plate(req: PlateAnalysisRequest):
 
             prompt = (
                 "Analyze this food dish or meal plate accurately. Respond ONLY with a valid JSON object with keys: "
-                "name (string, exact food name), cals (int, estimated calories), "
+                "name (string, dish name), cals (int, estimated calories), "
                 "protein (float, grams of protein), carbs (float, grams of carbs), "
                 "fat (float, grams of fat), cost (int, approximate INR cost), "
                 "emoji (single food emoji), confidence (float between 0.8 and 1.0)."
@@ -123,8 +130,8 @@ async def analyze_plate(req: PlateAnalysisRequest):
             raw = response.text.replace("```json", "").replace("```", "").strip()
             data = json.loads(raw)
             return NutritionItem(**data)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Gemini Vision error: {e}")
 
     return NutritionItem(
         name="Paneer Bhurji & 2 Phulkas",
@@ -223,8 +230,8 @@ def coach_chat(req: ChatRequest):
                 contents=prompt
             )
             return {"reply": resp.text.strip()}
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Gemini Chat error: {e}")
 
     msg = req.message.lower()
     if "protein" in msg or "budget" in msg or "cheap" in msg:
